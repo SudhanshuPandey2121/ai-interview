@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { vapi } from "@/lib/vapi.sdk";
+import { getVapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
@@ -36,6 +36,12 @@ const Agent = ({
   const [lastMessage, setLastMessage] = useState<string>("");
 
   useEffect(() => {
+    const vapi = getVapi();
+    if (!vapi) {
+      console.error("Vapi not initialized in useEffect");
+      return;
+    }
+
     const onCallStart = () => {
       setCallStatus(CallStatus.ACTIVE);
     };
@@ -62,23 +68,44 @@ const Agent = ({
     };
 
     const onError = (error: Error) => {
-      console.log("Error:", error);
+      console.error("Vapi error:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      
+      // Handle specific workflow errors
+      if (error.message.includes("ejection") || error.message.includes("Meeting ended")) {
+        console.error("Workflow ejection error - this might be due to:");
+        console.error("1. Incorrect workflow ID");
+        console.error("2. Workflow not properly configured");
+        console.error("3. Missing webhook endpoints");
+        console.error("4. Workflow permissions issues");
+      }
+      
+      setCallStatus(CallStatus.INACTIVE);
     };
 
-    vapi.on("call-start", onCallStart);
-    vapi.on("call-end", onCallEnd);
-    vapi.on("message", onMessage);
-    vapi.on("speech-start", onSpeechStart);
-    vapi.on("speech-end", onSpeechEnd);
-    vapi.on("error", onError);
+    try {
+      vapi.on("call-start", onCallStart);
+      vapi.on("call-end", onCallEnd);
+      vapi.on("message", onMessage);
+      vapi.on("speech-start", onSpeechStart);
+      vapi.on("speech-end", onSpeechEnd);
+      vapi.on("error", onError);
+    } catch (error) {
+      console.error("Error setting up Vapi event listeners:", error);
+    }
 
     return () => {
-      vapi.off("call-start", onCallStart);
-      vapi.off("call-end", onCallEnd);
-      vapi.off("message", onMessage);
-      vapi.off("speech-start", onSpeechStart);
-      vapi.off("speech-end", onSpeechEnd);
-      vapi.off("error", onError);
+      try {
+        vapi.off("call-start", onCallStart);
+        vapi.off("call-end", onCallEnd);
+        vapi.off("message", onMessage);
+        vapi.off("speech-start", onSpeechStart);
+        vapi.off("speech-end", onSpeechEnd);
+        vapi.off("error", onError);
+      } catch (error) {
+        console.error("Error cleaning up Vapi event listeners:", error);
+      }
     };
   }, []);
 
@@ -115,34 +142,64 @@ const Agent = ({
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
   const handleCall = async () => {
+    const vapi = getVapi();
+    if (!vapi) {
+      console.error("Vapi not initialized");
+      return;
+    }
+    
     setCallStatus(CallStatus.CONNECTING);
 
-    if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          username: userName,
-          userid: userId,
-        },
-      });
-    } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
-      }
+    try {
+      if (type === "generate") {
+        const workflowId = process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID;
+        console.log("Starting workflow with ID:", workflowId);
+        
+        await vapi.start(workflowId!, {
+          variableValues: {
+            username: userName,
+            userid: userId,
+          },
+        });
+      } else {
+        let formattedQuestions = "";
+        if (questions) {
+          formattedQuestions = questions
+            .map((question) => `- ${question}`)
+            .join("\n");
+        }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
+        await vapi.start(interviewer, {
+          variableValues: {
+            questions: formattedQuestions,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Vapi start error:", error);
+      console.error("Error details:", {
+        type,
+        workflowId: process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID,
+        userName,
+        userId,
       });
+      setCallStatus(CallStatus.INACTIVE);
     }
   };
 
   const handleDisconnect = () => {
+    const vapi = getVapi();
+    if (!vapi) {
+      console.error("Vapi not initialized");
+      return;
+    }
+    
     setCallStatus(CallStatus.FINISHED);
-    vapi.stop();
+    try {
+      vapi.stop();
+    } catch (error) {
+      console.error("Vapi stop error:", error);
+    }
   };
 
   return (

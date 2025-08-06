@@ -97,16 +97,21 @@ export async function getLatestInterviews(
 
   const interviews = await db
     .collection("interviews")
-    .orderBy("createdAt", "desc")
     .where("finalized", "==", true)
-    .where("userId", "!=", userId)
-    .limit(limit)
+    .limit(limit * 2) // Get more documents to account for filtering
     .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  // Filter and sort on the client side
+  const filteredInterviews = interviews.docs
+    .map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Interview))
+    .filter((interview) => interview.userId !== userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, limit);
+
+  return filteredInterviews;
 }
 
 export async function getInterviewsByUserId(
@@ -115,11 +120,15 @@ export async function getInterviewsByUserId(
   const interviews = await db
     .collection("interviews")
     .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
     .get();
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  // Sort on the client side
+  const sortedInterviews = interviews.docs
+    .map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Interview))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return sortedInterviews;
 }
