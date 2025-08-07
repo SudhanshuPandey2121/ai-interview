@@ -4,6 +4,7 @@ import Image from "next/image";
 
 import { Button } from "./ui/button";
 import DisplayTechIcons from "./DisplayTechIcons";
+import DeleteInterviewButton from "./DeleteInterviewButton";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
 import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
@@ -15,6 +16,7 @@ const InterviewCard = async ({
   type,
   techstack,
   createdAt,
+  showDeleteButton = false,
 }: InterviewCardProps) => {
   const feedback =
     userId && interviewId
@@ -50,6 +52,13 @@ const InterviewCard = async ({
           >
             <p className="badge-text ">{normalizedType}</p>
           </div>
+
+          {/* Delete Button */}
+          {showDeleteButton && interviewId && userId && (
+            <div className="absolute top-2 left-2">
+              <DeleteInterviewButton interviewId={interviewId} userId={userId} />
+            </div>
+          )}
 
           {/* Cover Image */}
           <Image

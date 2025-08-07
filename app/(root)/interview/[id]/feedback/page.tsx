@@ -6,9 +6,13 @@ import { redirect } from "next/navigation";
 import {
   getFeedbackByInterviewId,
   getInterviewById,
+  getLeaderboardByInterview,
+  getUserRankingForInterview,
 } from "@/lib/actions/general.action";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/actions/auth.action";
+import Leaderboard from "@/components/Leaderboard";
+import UserRankingCard from "@/components/UserRankingCard";
 
 const Feedback = async ({ params }: RouteParams) => {
   const { id } = await params;
@@ -17,10 +21,14 @@ const Feedback = async ({ params }: RouteParams) => {
   const interview = await getInterviewById(id);
   if (!interview) redirect("/");
 
-  const feedback = await getFeedbackByInterviewId({
-    interviewId: id,
-    userId: user?.id!,
-  });
+  const [feedback, leaderboard, userRanking] = await Promise.all([
+    getFeedbackByInterviewId({
+      interviewId: id,
+      userId: user?.id!,
+    }),
+    getLeaderboardByInterview(id),
+    getUserRankingForInterview(id, user?.id!),
+  ]);
 
   return (
     <section className="section-feedback">
@@ -91,6 +99,19 @@ const Feedback = async ({ params }: RouteParams) => {
           ))}
         </ul>
       </div>
+
+      {/* User Ranking and Leaderboard */}
+      {userRanking && (
+        <div className="mt-8">
+          <UserRankingCard ranking={userRanking} />
+        </div>
+      )}
+
+      {leaderboard && leaderboard.length > 0 && (
+        <div className="mt-8">
+          <Leaderboard leaderboard={leaderboard} currentUserId={user?.id} />
+        </div>
+      )}
 
       <div className="buttons">
         <Button className="btn-secondary flex-1">
