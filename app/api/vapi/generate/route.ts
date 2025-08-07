@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const { type, role, level, techstack, amount, userid } = await request.json();
 
   try {
-    const { text: questions } = await generateText({
+    const { text: questionsRaw } = await generateText({
       model: google("gemini-2.0-flash-001"),
       prompt: `Prepare questions for a job interview.
         The job role is ${role}.
@@ -25,12 +25,20 @@ export async function POST(request: Request) {
     `,
     });
 
+    // Extract array from model output
+    const matches = questionsRaw.trim().match(/\[.*\]/s);
+    if (!matches) {
+      throw new Error("Failed to extract valid question list from model response");
+    }
+
+    const parsedQuestions = JSON.parse(matches[0]);
+
     const interview = {
       role: role,
       type: type,
       level: level,
       techstack: techstack.split(","),
-      questions: JSON.parse(questions),
+      questions: parsedQuestions,
       userId: userid,
       finalized: true,
       coverImage: getRandomInterviewCover(userid),
@@ -41,8 +49,8 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true, interviewId: docRef.id }, { status: 200 });
   } catch (error) {
-    console.error("Error:", error);
-    return Response.json({ success: false, error: error }, { status: 500 });
+    console.error("Interview creation error:", error);
+    return Response.json({ success: false, error: error?.toString?.() }, { status: 500 });
   }
 }
 
