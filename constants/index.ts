@@ -156,31 +156,31 @@ End the conversation on a polite and positive note.
 };
 
 export const feedbackSchema = z.object({
-  totalScore: z.number(),
+  totalScore: z.number().min(0).max(100),
   categoryScores: z.tuple([
     z.object({
       name: z.literal("Communication Skills"),
-      score: z.number(),
+      score: z.number().min(0).max(100),
       comment: z.string(),
     }),
     z.object({
       name: z.literal("Technical Knowledge"),
-      score: z.number(),
+      score: z.number().min(0).max(100),
       comment: z.string(),
     }),
     z.object({
       name: z.literal("Problem Solving"),
-      score: z.number(),
+      score: z.number().min(0).max(100),
       comment: z.string(),
     }),
     z.object({
       name: z.literal("Cultural Fit"),
-      score: z.number(),
+      score: z.number().min(0).max(100),
       comment: z.string(),
     }),
     z.object({
       name: z.literal("Confidence and Clarity"),
-      score: z.number(),
+      score: z.number().min(0).max(100),
       comment: z.string(),
     }),
   ]),

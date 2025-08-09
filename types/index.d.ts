@@ -45,6 +45,7 @@ interface InterviewCardProps {
   type: string;
   techstack: string[];
   createdAt?: string;
+  showDeleteButton?: boolean;
 }
 
 interface AgentProps {
@@ -96,4 +97,19 @@ interface InterviewFormProps {
 
 interface TechIconProps {
   techStack: string[];
+}
+
+interface LeaderboardEntry {
+  userId: string;
+  userName: string;
+  totalScore: number;
+  createdAt: string;
+}
+
+interface UserRanking {
+  rank: number;
+  totalParticipants: number;
+  outperformed: number;
+  score: number;
+  percentile: number;
 }
