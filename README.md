@@ -9,11 +9,6 @@ PrepMate is a next-generation **AI-driven mock interview platform** that simulat
 1. [Tech Stack](#-tech-stack)
 2. [Features](#-features)
 3. [Getting Started](#-getting-started)
-4. [Achievements](#-achievements)
-5. [Roadmap](#-roadmap)
-6. [Contributing](#-contributing)
-7. [License](#-license)
-8. [Author](#-author)
 
 ---
 
